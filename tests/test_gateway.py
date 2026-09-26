@@ -78,6 +78,7 @@ def test_a_market_order_defaults_to_ioc_and_reports_the_unfilled_part(client: Te
     body = order(client, side="buy", type="market", quantity="3").json()
 
     assert body["status"] == "cancelled"
+    assert body["events"][0]["price"] is None
     assert body["filled_quantity"] == "1.000"
     assert body["events"][-1]["remaining"] == "2.000"
 

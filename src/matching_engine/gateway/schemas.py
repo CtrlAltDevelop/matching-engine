@@ -120,7 +120,7 @@ def render_event(spec: MarketSpec, event: Event) -> dict[str, Any]:
     out: dict[str, Any] = {"type": type(event).__struct_config__.tag}
     for name, value in msgspec.structs.asdict(event).items():
         if name in _PRICE_FIELDS:
-            out[name] = spec.price(value)
+            out[name] = spec.price(value) if value else None  # 0 is a market order: no price
         elif name in _QTY_FIELDS:
             out[name] = spec.qty(value)
         else:

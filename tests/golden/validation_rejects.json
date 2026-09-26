@@ -1,0 +1,32 @@
+{
+  "description": "Malformed orders are rejected and never reach the book.",
+  "commands": [
+    {"type":"new","order_id":1,"account":1,"side":"buy","price":100,"qty":0,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":2,"account":1,"side":"buy","price":0,"qty":5,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":3,"account":1,"side":"buy","price":0,"qty":5,"order_type":"market","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":4,"account":1,"side":"buy","price":100,"qty":5,"order_type":"limit","tif":"ioc","post_only":true,"stp":"cancel_taker"},
+    {"type":"new","order_id":5,"account":1,"side":"buy","price":100,"qty":5,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":5,"account":1,"side":"buy","price":101,"qty":5,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"}
+  ],
+  "events": [
+    [
+      {"type":"order_rejected","seq":1,"ts":1000,"order_id":1,"account":1,"reason":"invalid_quantity"}
+    ],
+    [
+      {"type":"order_rejected","seq":2,"ts":2000,"order_id":2,"account":1,"reason":"invalid_price"}
+    ],
+    [
+      {"type":"order_rejected","seq":3,"ts":3000,"order_id":3,"account":1,"reason":"invalid_time_in_force"}
+    ],
+    [
+      {"type":"order_rejected","seq":4,"ts":4000,"order_id":4,"account":1,"reason":"invalid_time_in_force"}
+    ],
+    [
+      {"type":"order_accepted","seq":5,"ts":5000,"order_id":5,"account":1,"side":"buy","order_type":"limit","tif":"gtc","price":100,"qty":5}
+    ],
+    [
+      {"type":"order_rejected","seq":6,"ts":6000,"order_id":5,"account":1,"reason":"duplicate_order_id"}
+    ]
+  ],
+  "book": {"bids":[[100,5,1]],"asks":[]}
+}

@@ -1,0 +1,20 @@
+{
+  "description": "A post-only buy that would cross is rejected; one priced below the ask rests.",
+  "commands": [
+    {"type":"new","order_id":1,"account":2,"side":"sell","price":100,"qty":5,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":2,"account":1,"side":"buy","price":100,"qty":5,"order_type":"limit","tif":"gtc","post_only":true,"stp":"cancel_taker"},
+    {"type":"new","order_id":3,"account":1,"side":"buy","price":99,"qty":5,"order_type":"limit","tif":"gtc","post_only":true,"stp":"cancel_taker"}
+  ],
+  "events": [
+    [
+      {"type":"order_accepted","seq":1,"ts":1000,"order_id":1,"account":2,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":5}
+    ],
+    [
+      {"type":"order_rejected","seq":2,"ts":2000,"order_id":2,"account":1,"reason":"post_only_would_cross"}
+    ],
+    [
+      {"type":"order_accepted","seq":3,"ts":3000,"order_id":3,"account":1,"side":"buy","order_type":"limit","tif":"gtc","price":99,"qty":5}
+    ]
+  ],
+  "book": {"bids":[[99,5,1]],"asks":[[100,5,1]]}
+}

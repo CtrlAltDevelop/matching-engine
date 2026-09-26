@@ -1,0 +1,27 @@
+{
+  "description": "Three sells at the same price fill strictly in arrival order.",
+  "commands": [
+    {"type":"new","order_id":1,"account":2,"side":"sell","price":100,"qty":3,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":2,"account":3,"side":"sell","price":100,"qty":3,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":3,"account":4,"side":"sell","price":100,"qty":3,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":4,"account":1,"side":"buy","price":100,"qty":7,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"}
+  ],
+  "events": [
+    [
+      {"type":"order_accepted","seq":1,"ts":1000,"order_id":1,"account":2,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":3}
+    ],
+    [
+      {"type":"order_accepted","seq":2,"ts":2000,"order_id":2,"account":3,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":3}
+    ],
+    [
+      {"type":"order_accepted","seq":3,"ts":3000,"order_id":3,"account":4,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":3}
+    ],
+    [
+      {"type":"order_accepted","seq":4,"ts":4000,"order_id":4,"account":1,"side":"buy","order_type":"limit","tif":"gtc","price":100,"qty":7},
+      {"type":"trade","seq":4,"ts":4000,"trade_id":1,"price":100,"qty":3,"taker_side":"buy","taker_order_id":4,"taker_account":1,"maker_order_id":1,"maker_account":2,"maker_remaining":0,"taker_remaining":4},
+      {"type":"trade","seq":4,"ts":4000,"trade_id":2,"price":100,"qty":3,"taker_side":"buy","taker_order_id":4,"taker_account":1,"maker_order_id":2,"maker_account":3,"maker_remaining":0,"taker_remaining":1},
+      {"type":"trade","seq":4,"ts":4000,"trade_id":3,"price":100,"qty":1,"taker_side":"buy","taker_order_id":4,"taker_account":1,"maker_order_id":3,"maker_account":4,"maker_remaining":2,"taker_remaining":0}
+    ]
+  ],
+  "book": {"bids":[],"asks":[[100,2,1]]}
+}

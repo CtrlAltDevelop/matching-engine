@@ -1,0 +1,22 @@
+{
+  "description": "An IOC buy fills what crosses at or below its limit and never rests.",
+  "commands": [
+    {"type":"new","order_id":1,"account":2,"side":"sell","price":100,"qty":4,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":2,"account":2,"side":"sell","price":102,"qty":4,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":3,"account":1,"side":"buy","price":101,"qty":6,"order_type":"limit","tif":"ioc","post_only":false,"stp":"cancel_taker"}
+  ],
+  "events": [
+    [
+      {"type":"order_accepted","seq":1,"ts":1000,"order_id":1,"account":2,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":4}
+    ],
+    [
+      {"type":"order_accepted","seq":2,"ts":2000,"order_id":2,"account":2,"side":"sell","order_type":"limit","tif":"gtc","price":102,"qty":4}
+    ],
+    [
+      {"type":"order_accepted","seq":3,"ts":3000,"order_id":3,"account":1,"side":"buy","order_type":"limit","tif":"ioc","price":101,"qty":6},
+      {"type":"trade","seq":3,"ts":3000,"trade_id":1,"price":100,"qty":4,"taker_side":"buy","taker_order_id":3,"taker_account":1,"maker_order_id":1,"maker_account":2,"maker_remaining":0,"taker_remaining":2},
+      {"type":"order_cancelled","seq":3,"ts":3000,"order_id":3,"account":1,"remaining":2,"reason":"unfilled"}
+    ]
+  ],
+  "book": {"bids":[],"asks":[[102,4,1]]}
+}

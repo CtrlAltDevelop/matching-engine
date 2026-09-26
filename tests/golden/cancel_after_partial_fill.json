@@ -1,0 +1,25 @@
+{
+  "description": "A resting order partially filled, then cancelled, reports only the unfilled quantity.",
+  "commands": [
+    {"type":"new","order_id":1,"account":2,"side":"buy","price":100,"qty":10,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":2,"account":1,"side":"sell","price":100,"qty":4,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"cancel","order_id":1,"account":2},
+    {"type":"new","order_id":3,"account":1,"side":"sell","price":100,"qty":1,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"}
+  ],
+  "events": [
+    [
+      {"type":"order_accepted","seq":1,"ts":1000,"order_id":1,"account":2,"side":"buy","order_type":"limit","tif":"gtc","price":100,"qty":10}
+    ],
+    [
+      {"type":"order_accepted","seq":2,"ts":2000,"order_id":2,"account":1,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":4},
+      {"type":"trade","seq":2,"ts":2000,"trade_id":1,"price":100,"qty":4,"taker_side":"sell","taker_order_id":2,"taker_account":1,"maker_order_id":1,"maker_account":2,"maker_remaining":6,"taker_remaining":0}
+    ],
+    [
+      {"type":"order_cancelled","seq":3,"ts":3000,"order_id":1,"account":2,"remaining":6,"reason":"user"}
+    ],
+    [
+      {"type":"order_accepted","seq":4,"ts":4000,"order_id":3,"account":1,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":1}
+    ]
+  ],
+  "book": {"bids":[],"asks":[[100,1,1]]}
+}

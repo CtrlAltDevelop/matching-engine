@@ -1,0 +1,26 @@
+{
+  "description": "A buy limit at 101 sweeps 100 and 101 at the makers' prices and rests the remainder at 101; 102 is untouched.",
+  "commands": [
+    {"type":"new","order_id":1,"account":2,"side":"sell","price":100,"qty":2,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":2,"account":2,"side":"sell","price":101,"qty":3,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":3,"account":3,"side":"sell","price":102,"qty":4,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":4,"account":1,"side":"buy","price":101,"qty":10,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"}
+  ],
+  "events": [
+    [
+      {"type":"order_accepted","seq":1,"ts":1000,"order_id":1,"account":2,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":2}
+    ],
+    [
+      {"type":"order_accepted","seq":2,"ts":2000,"order_id":2,"account":2,"side":"sell","order_type":"limit","tif":"gtc","price":101,"qty":3}
+    ],
+    [
+      {"type":"order_accepted","seq":3,"ts":3000,"order_id":3,"account":3,"side":"sell","order_type":"limit","tif":"gtc","price":102,"qty":4}
+    ],
+    [
+      {"type":"order_accepted","seq":4,"ts":4000,"order_id":4,"account":1,"side":"buy","order_type":"limit","tif":"gtc","price":101,"qty":10},
+      {"type":"trade","seq":4,"ts":4000,"trade_id":1,"price":100,"qty":2,"taker_side":"buy","taker_order_id":4,"taker_account":1,"maker_order_id":1,"maker_account":2,"maker_remaining":0,"taker_remaining":8},
+      {"type":"trade","seq":4,"ts":4000,"trade_id":2,"price":101,"qty":3,"taker_side":"buy","taker_order_id":4,"taker_account":1,"maker_order_id":2,"maker_account":2,"maker_remaining":0,"taker_remaining":5}
+    ]
+  ],
+  "book": {"bids":[[101,5,1]],"asks":[[102,4,1]]}
+}

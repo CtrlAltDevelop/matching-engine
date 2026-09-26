@@ -1,0 +1,26 @@
+{
+  "description": "FOK for 7 is rejected against 6 available and leaves the book intact; FOK for 6 then fills it all.",
+  "commands": [
+    {"type":"new","order_id":1,"account":2,"side":"sell","price":100,"qty":3,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":2,"account":3,"side":"sell","price":101,"qty":3,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":3,"account":1,"side":"buy","price":101,"qty":7,"order_type":"limit","tif":"fok","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":4,"account":1,"side":"buy","price":101,"qty":6,"order_type":"limit","tif":"fok","post_only":false,"stp":"cancel_taker"}
+  ],
+  "events": [
+    [
+      {"type":"order_accepted","seq":1,"ts":1000,"order_id":1,"account":2,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":3}
+    ],
+    [
+      {"type":"order_accepted","seq":2,"ts":2000,"order_id":2,"account":3,"side":"sell","order_type":"limit","tif":"gtc","price":101,"qty":3}
+    ],
+    [
+      {"type":"order_rejected","seq":3,"ts":3000,"order_id":3,"account":1,"reason":"fok_not_fillable"}
+    ],
+    [
+      {"type":"order_accepted","seq":4,"ts":4000,"order_id":4,"account":1,"side":"buy","order_type":"limit","tif":"fok","price":101,"qty":6},
+      {"type":"trade","seq":4,"ts":4000,"trade_id":1,"price":100,"qty":3,"taker_side":"buy","taker_order_id":4,"taker_account":1,"maker_order_id":1,"maker_account":2,"maker_remaining":0,"taker_remaining":3},
+      {"type":"trade","seq":4,"ts":4000,"trade_id":2,"price":101,"qty":3,"taker_side":"buy","taker_order_id":4,"taker_account":1,"maker_order_id":2,"maker_account":3,"maker_remaining":0,"taker_remaining":0}
+    ]
+  ],
+  "book": {"bids":[],"asks":[]}
+}

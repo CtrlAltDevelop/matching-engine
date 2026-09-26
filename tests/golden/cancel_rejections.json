@@ -1,0 +1,28 @@
+{
+  "description": "Cancels by a non-owner, of an unknown id, and of an already cancelled order are rejected.",
+  "commands": [
+    {"type":"new","order_id":1,"account":2,"side":"buy","price":100,"qty":1,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"cancel","order_id":1,"account":3},
+    {"type":"cancel","order_id":99,"account":2},
+    {"type":"cancel","order_id":1,"account":2},
+    {"type":"cancel","order_id":1,"account":2}
+  ],
+  "events": [
+    [
+      {"type":"order_accepted","seq":1,"ts":1000,"order_id":1,"account":2,"side":"buy","order_type":"limit","tif":"gtc","price":100,"qty":1}
+    ],
+    [
+      {"type":"order_rejected","seq":2,"ts":2000,"order_id":1,"account":3,"reason":"not_order_owner"}
+    ],
+    [
+      {"type":"order_rejected","seq":3,"ts":3000,"order_id":99,"account":2,"reason":"unknown_order"}
+    ],
+    [
+      {"type":"order_cancelled","seq":4,"ts":4000,"order_id":1,"account":2,"remaining":1,"reason":"user"}
+    ],
+    [
+      {"type":"order_rejected","seq":5,"ts":5000,"order_id":1,"account":2,"reason":"unknown_order"}
+    ]
+  ],
+  "book": {"bids":[],"asks":[]}
+}

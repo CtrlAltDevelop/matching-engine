@@ -1,0 +1,22 @@
+{
+  "description": "The taker's own resting order is cancelled and matching continues against the next order.",
+  "commands": [
+    {"type":"new","order_id":1,"account":1,"side":"sell","price":100,"qty":3,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":2,"account":2,"side":"sell","price":100,"qty":3,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_taker"},
+    {"type":"new","order_id":3,"account":1,"side":"buy","price":100,"qty":5,"order_type":"limit","tif":"gtc","post_only":false,"stp":"cancel_maker"}
+  ],
+  "events": [
+    [
+      {"type":"order_accepted","seq":1,"ts":1000,"order_id":1,"account":1,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":3}
+    ],
+    [
+      {"type":"order_accepted","seq":2,"ts":2000,"order_id":2,"account":2,"side":"sell","order_type":"limit","tif":"gtc","price":100,"qty":3}
+    ],
+    [
+      {"type":"order_accepted","seq":3,"ts":3000,"order_id":3,"account":1,"side":"buy","order_type":"limit","tif":"gtc","price":100,"qty":5},
+      {"type":"order_cancelled","seq":3,"ts":3000,"order_id":1,"account":1,"remaining":3,"reason":"self_trade"},
+      {"type":"trade","seq":3,"ts":3000,"trade_id":1,"price":100,"qty":3,"taker_side":"buy","taker_order_id":3,"taker_account":1,"maker_order_id":2,"maker_account":2,"maker_remaining":0,"taker_remaining":2}
+    ]
+  ],
+  "book": {"bids":[[100,2,1]],"asks":[]}
+}

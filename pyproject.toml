@@ -66,6 +66,7 @@ ignore = [
     "PLR0912",
     "PLR0913",
     "PLR2004", # tests compare against literal fixture values
+    "PLR0917", # hot-path helpers take positional args to avoid kwargs overhead
 ]
 
 [tool.ruff.lint.isort]
@@ -75,7 +76,7 @@ known-first-party = ["matching_engine"]
 strict = true
 python_version = "3.12"
 files = ["src", "tests"]
-mypy_path = "src"
+mypy_path = "src,tests"
 explicit_package_bases = true
 exclude = ['^\.venv/', '^build/', '^data/']
 warn_unreachable = true

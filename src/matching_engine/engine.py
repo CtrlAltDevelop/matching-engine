@@ -15,6 +15,7 @@ from matching_engine.domain import (
     NewOrder,
     OrderType,
     SequencedCommand,
+    TimeInForce,
 )
 from matching_engine.events import (
     CancelReason,
@@ -61,6 +62,8 @@ class MatchingEngine:
 
         opposite = self.book.opposite(o.side)
         limit_key = _NO_LIMIT if o.order_type is OrderType.MARKET else opposite.key(o.price)
+        if o.tif is TimeInForce.FOK and not self._can_fill(o, opposite, limit_key):
+            return [OrderRejected(seq, ts, o.order_id, o.account, RejectReason.FOK_NOT_FILLABLE)]
 
         events: list[Event] = [
             OrderAccepted(
@@ -69,7 +72,7 @@ class MatchingEngine:
         ]
         remaining = self._match(o, opposite, limit_key, events, seq, ts)
         if remaining:
-            if o.order_type is OrderType.LIMIT:
+            if o.order_type is OrderType.LIMIT and o.tif is TimeInForce.GTC:
                 self.book.add(RestingOrder(o.order_id, o.account, o.side, o.price, remaining))
             else:
                 events.append(
@@ -83,11 +86,29 @@ class MatchingEngine:
         if o.order_type is OrderType.MARKET:
             if o.price != 0:
                 return RejectReason.INVALID_PRICE
+            if o.tif is TimeInForce.GTC:  # nothing to rest at: market means IOC or FOK
+                return RejectReason.INVALID_TIME_IN_FORCE
         elif not 0 < o.price <= MAX_INT64:
             return RejectReason.INVALID_PRICE
         if o.order_id in self.book.orders:
             return RejectReason.DUPLICATE_ORDER_ID
         return None
+
+    def _can_fill(self, o: NewOrder, opposite: BookSide, limit_key: int) -> bool:
+        """Whether ``o`` would fill completely right now. Reads, never mutates.
+
+        FOK must be all-or-nothing, so it is decided before the first fill
+        rather than by unwinding trades afterwards.
+        """
+        needed = o.qty
+        levels = opposite.levels
+        for key in opposite.keys:
+            if key > limit_key:
+                return False
+            needed -= levels[key].qty
+            if needed <= 0:
+                return True
+        return False
 
     def _match(
         self,

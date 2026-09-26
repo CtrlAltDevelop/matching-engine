@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "matching-engine"
+version = "0.1.0"
+description = "A deterministic price-time priority matching engine with a checksummed write-ahead log, snapshots and a FastAPI gateway."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Mohammad Zarif" }]
+requires-python = ">=3.12"
+keywords = ["matching-engine", "order-book", "exchange", "trading", "write-ahead-log"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Typing :: Typed",
+]
+dependencies = [
+    "msgspec>=0.19",
+    "sortedcontainers>=2.4",
+]
+
+[project.optional-dependencies]
+gateway = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "websockets>=13",
+]
+
+[project.scripts]
+matching-engine = "matching_engine.cli:main"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.27",
+    "hypothesis>=6.100",
+    "mypy>=1.11",
+    "pytest>=8.3",
+    "ruff>=0.6",
+    "sortedcontainers-stubs>=2.4",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/matching_engine"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "C4", "PT", "PERF", "N", "PL", "PIE", "RET"]
+ignore = [
+    "PLR0911", # a validator returns one reason per rule, by design
+    "PLR0912",
+    "PLR0913",
+    "PLR2004", # tests compare against literal fixture values
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["matching_engine"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "tests"]
+mypy_path = "src"
+explicit_package_bases = true
+exclude = ['^\.venv/', '^build/', '^data/']
+warn_unreachable = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["slow: spawns processes or runs long workloads"]

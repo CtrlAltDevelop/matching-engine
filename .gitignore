@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+
+# Tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Engine state: WAL segments and snapshots are runtime data, never source
+data/
+*.wal
+*.log
+*.snap
+profile.*
+*.svg
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

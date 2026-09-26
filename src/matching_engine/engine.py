@@ -87,7 +87,9 @@ class MatchingEngine:
         positions and will react identically to any future command, which is
         what the replay and recovery tests compare.
         """
-        digest = hashlib.blake2b(_HASH_COUNTERS.pack(self.last_seq, self.next_trade_id))
+        digest = hashlib.blake2b(
+            _HASH_COUNTERS.pack(self.last_seq, self.next_trade_id), digest_size=32
+        )
         pack = _HASH_ORDER.pack
         for e in self.book.entries():
             digest.update(pack(e.order_id, e.account, e.side is Side.BUY, e.price, e.qty))

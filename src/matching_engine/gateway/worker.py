@@ -5,7 +5,8 @@ Per batch, the worker
 1. drains up to ``batch_max`` queued requests without waiting,
 2. stamps each one through the sequencer (order ids are the sequence number),
 3. appends them all to the WAL and makes them durable with **one** fsync,
-4. only then applies them to the engine and resolves each caller's future.
+4. only then applies them to the engine, resolves each caller's future and
+   hands the batch's events to the market-data hub.
 
 Nothing is acknowledged before it is on disk, and while one fsync is in
 flight the next batch fills up behind it — group commit falls out of the loop
@@ -27,6 +28,7 @@ from dataclasses import dataclass, field
 from matching_engine.domain import Command, SequencedCommand
 from matching_engine.engine import MatchingEngine
 from matching_engine.events import Event
+from matching_engine.gateway.marketdata import MarketDataHub
 from matching_engine.journal import Journal, RecoveryReport
 from matching_engine.market import MarketSpec
 from matching_engine.sequencer import Sequencer
@@ -57,6 +59,7 @@ class MarketWorker:
         journal: Journal,
         engine: MatchingEngine,
         report: RecoveryReport,
+        hub: MarketDataHub,
         *,
         batch_max: int,
         queue_max: int,
@@ -65,6 +68,7 @@ class MarketWorker:
     ) -> None:
         self.spec = spec
         self.engine = engine
+        self.hub = hub
         self._journal = journal
         self._sequencer = Sequencer(report.last_seq + 1, report.last_ts, clock)
         self._queue: asyncio.Queue[_Request | object] = asyncio.Queue(maxsize=queue_max)
@@ -148,10 +152,13 @@ class MarketWorker:
         else:
             journal.sync()
         process = self.engine.process
+        published: list[Event] = []
         for request, sc in zip(batch, stamped, strict=True):
             events = process(sc)
+            published += events
             if not request.future.done():  # the caller may have disconnected
                 request.future.set_result((sc, events))
+        self.hub.publish(published, self.engine)
         self._since_snapshot += len(batch)
 
     async def _checkpoint(self) -> None:

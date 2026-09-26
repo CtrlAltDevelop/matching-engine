@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from matching_engine.domain import CancelOrder
 from matching_engine.gateway import Settings, create_app
+from matching_engine.gateway.marketdata import MarketDataHub
 from matching_engine.gateway.worker import MarketUnavailableError, MarketWorker
 from matching_engine.journal import Journal
 from matching_engine.market import MarketSpec
@@ -196,8 +197,9 @@ def test_a_full_queue_refuses_new_work_instead_of_growing(tmp_path: Path) -> Non
     async def scenario() -> list[object]:
         journal = Journal(tmp_path, fsync=False)
         engine, report = journal.recover()
+        hub = MarketDataHub(BTC, depth_levels=5, subscriber_queue=10)
         worker = MarketWorker(
-            BTC, journal, engine, report, batch_max=8, queue_max=2, snapshot_every=1_000
+            BTC, journal, engine, report, hub, batch_max=8, queue_max=2, snapshot_every=1_000
         )
         worker.start()
         submits = [

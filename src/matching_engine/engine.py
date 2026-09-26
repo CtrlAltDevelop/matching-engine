@@ -8,7 +8,12 @@ engine produces the same events and the same book, every time.
 
 from __future__ import annotations
 
-from matching_engine.book import BookSide, OrderBook, RestingOrder
+import hashlib
+import struct
+
+import msgspec
+
+from matching_engine.book import BookEntry, BookSide, OrderBook, RestingOrder
 from matching_engine.domain import (
     MAX_INT64,
     CancelOrder,
@@ -16,6 +21,7 @@ from matching_engine.domain import (
     OrderType,
     SelfTradePrevention,
     SequencedCommand,
+    Side,
     TimeInForce,
 )
 from matching_engine.events import (
@@ -32,8 +38,20 @@ from matching_engine.events import (
 _NO_LIMIT = MAX_INT64
 
 
+_HASH_COUNTERS = struct.Struct("<QQ")
+_HASH_ORDER = struct.Struct("<QQ?qq")
+
+
 class SequenceError(ValueError):
     """A command arrived with a sequence number that is not the next one."""
+
+
+class EngineState(msgspec.Struct, frozen=True):
+    """Everything needed to rebuild an engine: counters plus the book in priority order."""
+
+    last_seq: int
+    next_trade_id: int
+    orders: list[BookEntry]
 
 
 class MatchingEngine:
@@ -43,6 +61,37 @@ class MatchingEngine:
         self.book = OrderBook()
         self.last_seq = 0
         self.next_trade_id = 1
+
+    @classmethod
+    def restore(cls, state: EngineState) -> MatchingEngine:
+        """Rebuild an engine from :meth:`export_state`, queue positions included.
+
+        Entries arrive best level first and oldest first within a level, so
+        appending them in order recreates every FIFO queue exactly.
+        """
+        engine = cls()
+        engine.last_seq = state.last_seq
+        engine.next_trade_id = state.next_trade_id
+        add = engine.book.add
+        for e in state.orders:
+            add(RestingOrder(e.order_id, e.account, e.side, e.price, e.qty))
+        return engine
+
+    def export_state(self) -> EngineState:
+        return EngineState(self.last_seq, self.next_trade_id, list(self.book.entries()))
+
+    def state_hash(self) -> str:
+        """A fingerprint of the full engine state, queue order included.
+
+        Two engines with the same hash hold the same orders at the same queue
+        positions and will react identically to any future command, which is
+        what the replay and recovery tests compare.
+        """
+        digest = hashlib.blake2b(_HASH_COUNTERS.pack(self.last_seq, self.next_trade_id))
+        pack = _HASH_ORDER.pack
+        for e in self.book.entries():
+            digest.update(pack(e.order_id, e.account, e.side is Side.BUY, e.price, e.qty))
+        return digest.hexdigest()
 
     def process(self, sc: SequencedCommand) -> list[Event]:
         """Apply one command and return everything it caused, in order."""

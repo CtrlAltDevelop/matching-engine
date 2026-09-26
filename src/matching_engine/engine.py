@@ -14,6 +14,7 @@ from matching_engine.domain import (
     CancelOrder,
     NewOrder,
     OrderType,
+    SelfTradePrevention,
     SequencedCommand,
     TimeInForce,
 )
@@ -62,8 +63,13 @@ class MatchingEngine:
 
         opposite = self.book.opposite(o.side)
         limit_key = _NO_LIMIT if o.order_type is OrderType.MARKET else opposite.key(o.price)
-        if o.tif is TimeInForce.FOK and not self._can_fill(o, opposite, limit_key):
-            return [OrderRejected(seq, ts, o.order_id, o.account, RejectReason.FOK_NOT_FILLABLE)]
+        if o.post_only:
+            if opposite.keys and opposite.keys[0] <= limit_key:
+                reason = RejectReason.POST_ONLY_WOULD_CROSS
+        elif o.tif is TimeInForce.FOK and not self._can_fill(o, opposite, limit_key):
+            reason = RejectReason.FOK_NOT_FILLABLE
+        if reason is not None:
+            return [OrderRejected(seq, ts, o.order_id, o.account, reason)]
 
         events: list[Event] = [
             OrderAccepted(
@@ -90,6 +96,8 @@ class MatchingEngine:
                 return RejectReason.INVALID_TIME_IN_FORCE
         elif not 0 < o.price <= MAX_INT64:
             return RejectReason.INVALID_PRICE
+        if o.post_only and o.tif is not TimeInForce.GTC:  # a maker-only order must rest
+            return RejectReason.INVALID_TIME_IN_FORCE
         if o.order_id in self.book.orders:
             return RejectReason.DUPLICATE_ORDER_ID
         return None
@@ -98,14 +106,27 @@ class MatchingEngine:
         """Whether ``o`` would fill completely right now. Reads, never mutates.
 
         FOK must be all-or-nothing, so it is decided before the first fill
-        rather than by unwinding trades afterwards.
+        rather than by unwinding trades afterwards. The walk mirrors what
+        ``_match`` would do with the same order's self-trade policy: an own
+        order either stops matching or is skipped (it would be cancelled).
         """
         needed = o.qty
+        stp, account = o.stp, o.account
         levels = opposite.levels
         for key in opposite.keys:
             if key > limit_key:
                 return False
-            needed -= levels[key].qty
+            level = levels[key]
+            if stp is SelfTradePrevention.NONE:
+                needed -= level.qty
+            else:
+                for maker in level:
+                    if maker.account != account:
+                        needed -= maker.remaining
+                    elif stp is not SelfTradePrevention.CANCEL_MAKER:
+                        return False
+                    if needed <= 0:
+                        return True
             if needed <= 0:
                 return True
         return False
@@ -119,14 +140,18 @@ class MatchingEngine:
         seq: int,
         ts: int,
     ) -> int:
-        """Cross ``o`` against the opposite side; return the unfilled quantity.
+        """Cross ``o`` against the opposite side; return what is left to handle.
 
         Always takes the head of the best level: price priority from the
         sorted keys, time priority from the FIFO queue. Fills print at the
         maker's price, so an aggressive limit gets price improvement.
+
+        When self-trade prevention cancels the taker, the cancel event is
+        emitted here and 0 is returned: there is nothing left to rest.
         """
         book = self.book
         keys, levels = opposite.keys, opposite.levels
+        account, stp = o.account, o.stp
         remaining = o.qty
         while remaining and keys:
             key = keys[0]
@@ -135,6 +160,26 @@ class MatchingEngine:
             level = levels[key]
             maker = level.head
             assert maker is not None  # empty levels are removed eagerly
+            if maker.account == account and stp is not SelfTradePrevention.NONE:
+                if stp is not SelfTradePrevention.CANCEL_TAKER:
+                    book.remove(maker)
+                    events.append(
+                        OrderCancelled(
+                            seq,
+                            ts,
+                            maker.order_id,
+                            maker.account,
+                            maker.remaining,
+                            CancelReason.SELF_TRADE,
+                        )
+                    )
+                    if stp is SelfTradePrevention.CANCEL_MAKER:
+                        continue
+                events.append(
+                    OrderCancelled(seq, ts, o.order_id, account, remaining, CancelReason.SELF_TRADE)
+                )
+                return 0
+
             fill = remaining if remaining < maker.remaining else maker.remaining
             remaining -= fill
             maker.remaining -= fill
@@ -150,7 +195,7 @@ class MatchingEngine:
                     fill,
                     o.side,
                     o.order_id,
-                    o.account,
+                    account,
                     maker.order_id,
                     maker.account,
                     maker.remaining,
@@ -165,6 +210,8 @@ class MatchingEngine:
         order = self.book.orders.get(c.order_id)
         if order is None:
             return [OrderRejected(seq, ts, c.order_id, c.account, RejectReason.UNKNOWN_ORDER)]
+        if order.account != c.account:
+            return [OrderRejected(seq, ts, c.order_id, c.account, RejectReason.NOT_ORDER_OWNER)]
         self.book.remove(order)
         return [
             OrderCancelled(

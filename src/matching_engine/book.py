@@ -204,9 +204,9 @@ class OrderBook:
         """L2 depth, at most ``levels`` per side (all levels when ``None``)."""
         return Depth(bids=_aggregate(self.bids, levels), asks=_aggregate(self.asks, levels))
 
-    def entries(self) -> Iterator[BookEntry]:
-        """L3 view: every resting order, bids then asks, each in priority order."""
-        for book_side in (self.bids, self.asks):
+    def entries(self, side: Side | None = None) -> Iterator[BookEntry]:
+        """L3 view: resting orders in priority order, bids then asks (or one side)."""
+        for book_side in (self.bids, self.asks) if side is None else (self.side(side),):
             for level in book_side:
                 for o in level:
                     yield BookEntry(o.order_id, o.account, o.side, o.price, o.remaining)

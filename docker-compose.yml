@@ -1,0 +1,17 @@
+services:
+  gateway:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      ME_MARKETS: "BTC-USDT:0.01:0.00001,ETH-USDT:0.01:0.0001"
+      ME_FSYNC: "1"
+      ME_SNAPSHOT_EVERY: "100000"
+    volumes:
+      # WAL segments and snapshots. Losing this volume loses the books.
+      - engine-data:/data
+    # Give every market time to drain, checkpoint and close its log.
+    stop_grace_period: 30s
+
+volumes:
+  engine-data:

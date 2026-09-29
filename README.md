@@ -1,5 +1,10 @@
 # Matching Engine
 
+[![CI](https://github.com/CtrlAltDevelop/matching-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/CtrlAltDevelop/matching-engine/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/CtrlAltDevelop/matching-engine)](https://github.com/CtrlAltDevelop/matching-engine/releases)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 A price-time priority order book that matches deterministically, survives a
 crash with every acknowledged order intact, and publishes measured numbers
 rather than claimed ones.

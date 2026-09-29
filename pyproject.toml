@@ -31,6 +31,7 @@ dependencies = [
 [project.optional-dependencies]
 gateway = [
     "fastapi>=0.115",
+    "httptools>=0.6",  # C HTTP parser; uvicorn falls back to pure-Python h11 without it
     "uvicorn>=0.30",
     "websockets>=13",
 ]
@@ -75,8 +76,8 @@ known-first-party = ["matching_engine"]
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["src", "tests"]
-mypy_path = "src,tests"
+files = ["src", "tests", "bench"]
+mypy_path = "src,tests,bench"
 explicit_package_bases = true
 exclude = ['^\.venv/', '^build/', '^data/']
 warn_unreachable = true

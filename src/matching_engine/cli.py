@@ -15,12 +15,19 @@ from matching_engine.snapshot import SnapshotError
 from matching_engine.wal import WalCorruptionError
 
 
-def serve(host: str, port: int) -> None:
+def serve(host: str, port: int, *, access_log: bool) -> None:
     import uvicorn  # noqa: PLC0415 - the gateway extra is optional for engine-only installs
 
     from matching_engine.gateway import create_app  # noqa: PLC0415
 
-    uvicorn.run(create_app(), host=host, port=port, log_level="info")
+    uvicorn.run(
+        create_app(),
+        host=host,
+        port=port,
+        log_level="info",
+        access_log=access_log,
+        http="httptools",
+    )
 
 
 def verify(market_dir: Path) -> int:
@@ -48,13 +55,16 @@ def main(argv: list[str] | None = None) -> int:
     serve_cmd = commands.add_parser("serve", help="run the HTTP/WebSocket gateway")
     serve_cmd.add_argument("--host", default="127.0.0.1")
     serve_cmd.add_argument("--port", type=int, default=8000)
+    serve_cmd.add_argument(
+        "--access-log", action="store_true", help="log every request (costs throughput)"
+    )
     verify_cmd = commands.add_parser("verify", help="check a market directory without repairing")
     verify_cmd.add_argument("market_dir", type=Path)
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     if args.command == "serve":
-        serve(args.host, args.port)
+        serve(args.host, args.port, access_log=args.access_log)
         return 0
     return verify(args.market_dir)
 

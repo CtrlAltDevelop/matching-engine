@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import gc
+import statistics
 import time
 
 from _common import machine, percentile, stamped_flow
@@ -49,7 +50,7 @@ def latencies(commands: list[SequencedCommand]) -> list[int]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--orders", type=int, default=1_000_000)
-    parser.add_argument("--runs", type=int, default=3, help="throughput runs; best is reported")
+    parser.add_argument("--runs", type=int, default=5, help="throughput runs")
     args = parser.parse_args()
 
     commands = stamped_flow(args.orders)
@@ -63,7 +64,10 @@ def main() -> None:
 
     print(f"machine: {machine()}")
     print(f"commands: {len(commands):,}  trades: {trades:,}  resting at end: {len(engine.book):,}")
-    print(f"throughput: best {max(rates):,.0f} cmd/s, runs {[f'{r:,.0f}' for r in rates]}")
+    print(
+        f"throughput: median {statistics.median(rates):,.0f} cmd/s "
+        f"(min {min(rates):,.0f}, max {max(rates):,.0f}, {len(rates)} runs)"
+    )
     print(
         "latency (us): "
         f"p50 {percentile(samples, 50):.2f}  p99 {percentile(samples, 99):.2f}  "

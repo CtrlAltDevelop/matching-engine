@@ -11,6 +11,7 @@ what one fsync per batch costs on this disk.
 from __future__ import annotations
 
 import argparse
+import statistics
 import tempfile
 import time
 from pathlib import Path
@@ -58,6 +59,11 @@ def group_commit(root: Path, commands: list[SequencedCommand], batch: int, count
     return count / (time.perf_counter() - start)
 
 
+def spread(runs: list[tuple[float, int, int, str]]) -> str:
+    times = sorted(r[0] for r in runs)
+    return f"median {statistics.median(times):.2f} s (min {times[0]:.2f}, max {times[-1]:.2f})"
+
+
 def size_mb(root: Path, pattern: str) -> float:
     return sum(p.stat().st_size for p in root.rglob(pattern)) / 1e6
 
@@ -66,6 +72,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--events", type=int, default=1_000_000)
     parser.add_argument("--tail", type=int, default=100_000, help="records after the snapshot")
+    parser.add_argument("--runs", type=int, default=3)
     args = parser.parse_args()
 
     commands = stamped_flow(args.events)
@@ -75,15 +82,19 @@ def main() -> None:
         build_log(plain, commands, snapshot_at=None)
         build_log(snap, commands, snapshot_at=args.events - args.tail)
 
-        full = timed_recovery(plain)
-        tail = timed_recovery(snap)
-        assert full[3] == tail[3], "both recoveries must land on the same state"
+        # A laptop's clock and background load wander, so report the spread.
+        full = [timed_recovery(plain) for _ in range(args.runs)]
+        tail = [timed_recovery(snap) for _ in range(args.runs)]
+        assert len({r[3] for r in full + tail}) == 1, "every recovery must land on one state"
         print(f"WAL: {size_mb(plain, '*.wal'):.1f} MB, snapshot: {size_mb(snap, '*.snap'):.1f} MB")
+        replayed = full[0][2]
         print(
-            f"recovery, full replay: {full[0]:.2f} s for {full[2]:,} records "
-            f"({full[2] / full[0]:,.0f} records/s)"
+            f"recovery, full replay of {replayed:,} records: {spread(full)} "
+            f"= {replayed / statistics.median(r[0] for r in full):,.0f} records/s"
         )
-        print(f"recovery, snapshot at seq {tail[1]:,} + {tail[2]:,} record tail: {tail[0]:.2f} s")
+        print(
+            f"recovery, snapshot at seq {tail[0][1]:,} + {tail[0][2]:,} record tail: {spread(tail)}"
+        )
 
         for batch, count in ((1, 2_000), (64, 64_000), (512, 256_000)):
             rate = group_commit(Path(tmp), commands, batch, count)

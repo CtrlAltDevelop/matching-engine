@@ -17,7 +17,7 @@ permissions: {}
 jobs:
   backend:
     name: Backend
-    uses: CtrlAltDevelop/ci-workflows/.github/workflows/python-backend.yml@v1
+    uses: CtrlAltDevelop/ci-workflows/.github/workflows/python-backend.yml@v1.1.1
     with:
       python-version: "3.14"
       # Runtime pins from `make requirements` (uv export). The project itself
@@ -32,7 +32,7 @@ jobs:
 
   security:
     name: Security
-    uses: CtrlAltDevelop/ci-workflows/.github/workflows/security.yml@v1
+    uses: CtrlAltDevelop/ci-workflows/.github/workflows/security.yml@v1.1.1
     permissions:
       contents: read
       security-events: write

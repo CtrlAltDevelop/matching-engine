@@ -18,6 +18,8 @@ jobs:
   backend:
     name: Backend
     uses: CtrlAltDevelop/ci-workflows/.github/workflows/python-backend.yml@v1.1.1
+    permissions:
+      contents: read
     with:
       python-version: "3.14"
       # Runtime pins from `make requirements` (uv export). The project itself

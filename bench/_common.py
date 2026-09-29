@@ -33,8 +33,8 @@ def cpu_name() -> str:
     except ImportError:
         return platform.processor() or platform.machine()
     path = chr(92).join(("HARDWARE", "DESCRIPTION", "System", "CentralProcessor", "0"))
-    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path) as key:
-        return str(winreg.QueryValueEx(key, "ProcessorNameString")[0]).strip()
+    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path) as key:  # type: ignore[attr-defined]
+        return str(winreg.QueryValueEx(key, "ProcessorNameString")[0]).strip()  # type: ignore[attr-defined]
 
 
 def machine() -> str:

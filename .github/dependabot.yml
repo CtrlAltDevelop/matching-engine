@@ -1,0 +1,26 @@
+# Actions first: an unpinned or abandoned action is the most direct route into
+# a pipeline that can execute code in this repository.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # uv.lock and pyproject.toml. After a bump, regenerate requirements.txt
+  # with `make requirements` so CI audits the same pins.
+  - package-ecosystem: uv
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      python-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly

@@ -36,6 +36,12 @@ gateway = [
     "websockets>=13",
 ]
 
+[project.urls]
+Homepage = "https://github.com/CtrlAltDevelop/matching-engine"
+Source = "https://github.com/CtrlAltDevelop/matching-engine"
+Changelog = "https://github.com/CtrlAltDevelop/matching-engine/blob/main/CHANGELOG.md"
+Issues = "https://github.com/CtrlAltDevelop/matching-engine/issues"
+
 [project.scripts]
 matching-engine = "matching_engine.cli:main"
 

@@ -1,9 +1,11 @@
 # Matching Engine
 
-[![CI](https://github.com/CtrlAltDevelop/matching-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/CtrlAltDevelop/matching-engine/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/CtrlAltDevelop/matching-engine)](https://github.com/CtrlAltDevelop/matching-engine/releases)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![CI](https://github.com/CtrlAltDevelop/matching-engine/actions/workflows/ci.yml/badge.svg "Lint, type-check, tests and security scan on main")](https://github.com/CtrlAltDevelop/matching-engine/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/matching-engine "Latest version on PyPI")](https://pypi.org/project/matching-engine/)
+[![Release](https://img.shields.io/github/v/release/CtrlAltDevelop/matching-engine "Latest GitHub release")](https://github.com/CtrlAltDevelop/matching-engine/releases)
+[![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue "Supported Python versions")](pyproject.toml)
+[![Typed: mypy strict](https://img.shields.io/badge/typed-mypy%20--strict-2a6db2 "Checked with mypy --strict")](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green "MIT licensed")](LICENSE)
 
 A price-time priority order book that matches deterministically, survives a
 crash with every acknowledged order intact, and publishes measured numbers

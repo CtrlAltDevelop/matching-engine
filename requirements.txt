@@ -8,7 +8,7 @@ anyio==4.15.1
     # via starlette
 click==8.5.0
     # via uvicorn
-fastapi==0.141.1
+fastapi==0.142.2
     # via matching-engine
 h11==0.16.0
     # via uvicorn
@@ -16,7 +16,7 @@ httptools==0.8.0
     # via matching-engine
 idna==3.20
     # via anyio
-msgspec==0.21.1
+msgspec==0.22.0
     # via matching-engine
 pydantic==2.13.5
     # via fastapi
@@ -40,5 +40,5 @@ typing-inspection==0.4.4
     #   pydantic
 uvicorn==0.54.0
     # via matching-engine
-websockets==17.1
+websockets==17.2
     # via matching-engine

@@ -9,7 +9,7 @@ someone's limit price is worse than rejecting the order.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation
+from decimal import Context, Decimal, DecimalException, Inexact, InvalidOperation
 
 from matching_engine.domain import MAX_INT64
 
@@ -45,8 +45,16 @@ class MarketSpec:
         return f"{self.lot_size * lots:f}"
 
 
+# Any valid unit count fits in 19 digits, so a quotient that needs rounding at
+# 28 is off-grid or out of range: trap it rather than round someone's order.
+_EXACT = Context(traps=[Inexact, InvalidOperation])
+
+
 def _to_units(value: Decimal, step: Decimal, what: str) -> int:
-    units = value / step
+    try:
+        units = _EXACT.divide(value, step)
+    except DecimalException:
+        raise ValueError(f"{what} {value} is not a multiple of {step}") from None
     if units != units.to_integral_value():
         raise ValueError(f"{what} {value} is not a multiple of {step}")
     if not 0 < units <= MAX_INT64:

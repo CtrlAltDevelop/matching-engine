@@ -8,16 +8,18 @@ anyio==4.15.1
     # via starlette
 click==8.5.0
     # via uvicorn
-fastapi==0.142.2
+fastapi==0.143.0
     # via matching-engine
 h11==0.16.0
     # via uvicorn
-httptools==0.8.0
+httptools==0.9.0
     # via matching-engine
 idna==3.20
     # via anyio
 msgspec==0.22.0
     # via matching-engine
+opentelemetry-api==1.45.1
+    # via fastapi
 pydantic==2.13.5
     # via fastapi
 pydantic-core==2.46.5
@@ -30,6 +32,7 @@ typing-extensions==4.16.0
     # via
     #   anyio
     #   fastapi
+    #   opentelemetry-api
     #   pydantic
     #   pydantic-core
     #   starlette

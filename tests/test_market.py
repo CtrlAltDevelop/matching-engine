@@ -16,7 +16,9 @@ def test_decimal_prices_convert_to_whole_ticks_and_back() -> None:
     assert SPEC.qty(50_000) == "0.50000"
 
 
-@pytest.mark.parametrize("price", ["64250.375", "0", "-0.01", "1e30"])
+@pytest.mark.parametrize(
+    "price", ["64250.375", "0", "-0.01", "1e30", "1e999999", "1.00000000000000000000000000001"]
+)
 def test_prices_off_the_grid_or_out_of_range_are_refused(price: str) -> None:
     with pytest.raises(ValueError, match="price"):
         SPEC.to_ticks(Decimal(price))

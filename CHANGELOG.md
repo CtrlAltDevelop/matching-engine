@@ -8,6 +8,15 @@ cannot read the previous release's files is a major version.
 
 ## [Unreleased]
 
+### Fixed
+
+- Prices and quantities with more digits than the decimal context holds were
+  silently rounded onto the grid; they are now refused. A huge exponent
+  (`1e999999`) returned a 500 instead of a 422.
+- A WebSocket feed cancelled by server shutdown left its pump and hang-up
+  tasks running, and a send error on a dead socket was logged as an
+  unretrieved task exception.
+
 ## [0.1.0] — 2026-09-29
 
 ### Added

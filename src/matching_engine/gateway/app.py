@@ -199,11 +199,17 @@ async def feed(ws: WebSocket, symbol: str) -> None:
     subscriber, snapshot = worker.hub.subscribe(worker.engine)
     try:
         await ws.send_text(snapshot)
-        pump = asyncio.create_task(_pump(ws, subscriber))
-        hangup = asyncio.create_task(_wait_for_disconnect(ws))
-        _, pending = await asyncio.wait({pump, hangup}, return_when=asyncio.FIRST_COMPLETED)
-        for task in pending:
-            task.cancel()
+        tasks = {
+            asyncio.create_task(_pump(ws, subscriber)),
+            asyncio.create_task(_wait_for_disconnect(ws)),
+        }
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            # Runs on shutdown cancellation too, so neither task outlives the socket.
+            for task in tasks:
+                if not task.cancel():  # already finished: reap a dead socket's send error
+                    task.exception()
     finally:
         worker.hub.unsubscribe(subscriber)
 

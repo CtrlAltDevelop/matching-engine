@@ -8,6 +8,8 @@ cannot read the previous release's files is a major version.
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-10-15
+
 ### Fixed
 
 - Prices and quantities with more digits than the decimal context holds were
@@ -16,6 +18,11 @@ cannot read the previous release's files is a major version.
 - A WebSocket feed cancelled by server shutdown left its pump and hang-up
   tasks running, and a send error on a dead socket was logged as an
   unretrieved task exception.
+
+### Changed
+
+- Dependencies: fastapi 0.143.1, starlette 1.8.0, pydantic 2.14.1,
+  httptools 0.9.0, ruff 0.17.0.
 
 ## [0.1.0] — 2026-09-29
 
@@ -44,5 +51,6 @@ cannot read the previous release's files is a major version.
 - Golden, property-based, replay, crash (killed subprocess) and gateway tests;
   engine, recovery and end-to-end benchmarks.
 
-[Unreleased]: https://github.com/CtrlAltDevelop/matching-engine/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/CtrlAltDevelop/matching-engine/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/CtrlAltDevelop/matching-engine/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/CtrlAltDevelop/matching-engine/releases/tag/v0.1.0

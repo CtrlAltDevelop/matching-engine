@@ -4,11 +4,11 @@ annotated-doc==0.0.5
     # via fastapi
 annotated-types==0.8.0
     # via pydantic
-anyio==4.15.1
+anyio==4.16.0
     # via starlette
-click==8.5.0
+click==8.5.1
     # via uvicorn
-fastapi==0.143.1
+fastapi==0.162.2
     # via matching-engine
 h11==0.16.0
     # via uvicorn
@@ -18,15 +18,15 @@ idna==3.20
     # via anyio
 msgspec==0.22.0
     # via matching-engine
-opentelemetry-api==1.45.1
+opentelemetry-api==1.45.2
     # via fastapi
-pydantic==2.14.1
+pydantic==2.14.3
     # via fastapi
 pydantic-core==2.50.1
     # via pydantic
 sortedcontainers==2.4.0
     # via matching-engine
-starlette==1.8.0
+starlette==1.10.0
     # via fastapi
 typing-extensions==4.16.0
     # via
@@ -37,11 +37,11 @@ typing-extensions==4.16.0
     #   pydantic-core
     #   starlette
     #   typing-inspection
-typing-inspection==0.4.4
+typing-inspection==0.4.5
     # via
     #   fastapi
     #   pydantic
 uvicorn==0.54.0
     # via matching-engine
-websockets==17.2
+websockets==17.4
     # via matching-engine

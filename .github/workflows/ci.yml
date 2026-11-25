@@ -1,11 +1,10 @@
-# The gate in front of main. The checks themselves live in
-# CtrlAltDevelop/ci-workflows, so every project runs the same ones.
+# Runs the tests on a pull request into main — and on nothing else.
+# The job lives once in CtrlAltDevelop/ci-workflows (python-test.yml).
+
 name: CI
 
 on:
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
 
 concurrency:
@@ -15,29 +14,12 @@ concurrency:
 permissions: {}
 
 jobs:
-  backend:
-    name: Backend
-    uses: CtrlAltDevelop/ci-workflows/.github/workflows/python-backend.yml@v1.1.1
+  test:
+    name: Test
+    uses: CtrlAltDevelop/ci-workflows/.github/workflows/python-test.yml@v1.2.0
     permissions:
       contents: read
     with:
       python-version: "3.14"
-      # Runtime pins from `make requirements` (uv export). The project itself
-      # is installed below, not listed there, so pip-audit only audits what
-      # comes from PyPI.
-      requirements: requirements.txt
-      # The engine keeps its state in files: no database, no cache.
-      postgres: false
-      redis: false
-      mypy: true
-      test-requirements: "pytest hypothesis httpx2 sortedcontainers-stubs -e ."
-
-  security:
-    name: Security
-    uses: CtrlAltDevelop/ci-workflows/.github/workflows/security.yml@v1.1.1
-    permissions:
-      contents: read
-      security-events: write
-      pull-requests: write
-    with:
-      languages: '["python"]'
+      # The gateway extra carries fastapi, which the gateway tests import.
+      install: uv sync --locked --all-extras

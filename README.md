@@ -5,7 +5,10 @@
 [![Release](https://img.shields.io/github/v/release/CtrlAltDevelop/matching-engine "Latest GitHub release")](https://github.com/CtrlAltDevelop/matching-engine/releases)
 [![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue "Supported Python versions")](pyproject.toml)
 [![Typed: mypy strict](https://img.shields.io/badge/typed-mypy%20--strict-2a6db2 "Checked with mypy --strict")](pyproject.toml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green "MIT licensed")](LICENSE)
+![FastAPI](https://img.shields.io/badge/fastapi-%E2%89%A50.115-009688)
+![Docker](https://img.shields.io/badge/docker-compose-2496ED)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg "AGPL-3.0 licensed")](LICENSE)
+[![last commit](https://img.shields.io/github/last-commit/CtrlAltDevelop/matching-engine)](https://github.com/CtrlAltDevelop/matching-engine/commits/main)
 
 A price-time priority order book that matches deterministically, survives a
 crash with every acknowledged order intact, and publishes measured numbers
@@ -282,6 +285,10 @@ uv tool run py-spy record -o flame.svg -- python bench/bench_engine.py --orders 
 3. [Integer ticks and lots instead of floats or Decimal](docs/adr/0003-integer-ticks-and-lots.md)
 4. [Python first, with a clean path to a Rust core](docs/adr/0004-python-first-with-a-rust-path.md)
 
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
-[MIT](LICENSE) © 2026 Mohammad Zarif
+[AGPL-3.0-only](LICENSE) © 2026 Mohammad Zarif

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.14-slim AS build
+FROM python:3.15-slim AS build
 COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /usr/local/bin/uv
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
@@ -9,7 +9,7 @@ RUN uv sync --frozen --no-dev --extra gateway --no-install-project
 COPY src ./src
 RUN uv sync --frozen --no-dev --extra gateway --no-editable
 
-FROM python:3.14-slim
+FROM python:3.15-slim
 RUN useradd --system --uid 10001 --home-dir /nonexistent engine \
     && mkdir /data && chown engine /data
 COPY --from=build /app/.venv /app/.venv

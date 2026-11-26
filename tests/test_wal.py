@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import msgspec
 import pytest
 from helpers import cancel, limit, market, replace
 
@@ -35,6 +36,9 @@ COMMANDS = [
     SequencedCommand(3, 30, market(3, Side.SELL, 9, tif=TimeInForce.FOK)),
     SequencedCommand(4, 40, cancel(1, account=7)),
     SequencedCommand(5, 50, replace(1, 99, 4, account=7)),
+    SequencedCommand(
+        6, 60, msgspec.structs.replace(limit(2, Side.SELL, 100, 3, account=7), stop_price=95)
+    ),
 ]
 
 

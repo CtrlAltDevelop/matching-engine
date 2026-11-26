@@ -44,8 +44,13 @@ class SelfTradePrevention(StrEnum):
     CANCEL_BOTH = "cancel_both"  # cancel both
 
 
-class NewOrder(msgspec.Struct, frozen=True, gc=False, tag="new"):
-    """Place an order. ``price`` is ignored (and must be 0) for market orders."""
+class NewOrder(msgspec.Struct, frozen=True, gc=False, tag="new", omit_defaults=True):
+    """Place an order. ``price`` is ignored (and must be 0) for market orders.
+
+    A non-zero ``stop_price`` makes it a stop order: parked off the book until
+    the last trade price reaches the stop (at or above for a buy, at or below
+    for a sell), then submitted as the limit or market order described here.
+    """
 
     order_id: int
     account: int
@@ -56,6 +61,7 @@ class NewOrder(msgspec.Struct, frozen=True, gc=False, tag="new"):
     tif: TimeInForce = TimeInForce.GTC
     post_only: bool = False
     stp: SelfTradePrevention = SelfTradePrevention.CANCEL_TAKER
+    stop_price: int = 0
 
 
 class CancelOrder(msgspec.Struct, frozen=True, gc=False, tag="cancel"):

@@ -32,7 +32,9 @@ class CancelReason(StrEnum):
     SELF_TRADE = "self_trade"  # removed by self-trade prevention
 
 
-class OrderAccepted(msgspec.Struct, frozen=True, gc=False, tag="order_accepted"):
+class OrderAccepted(
+    msgspec.Struct, frozen=True, gc=False, tag="order_accepted", omit_defaults=True
+):
     seq: int
     ts: int
     order_id: int
@@ -42,6 +44,7 @@ class OrderAccepted(msgspec.Struct, frozen=True, gc=False, tag="order_accepted")
     tif: TimeInForce
     price: int
     qty: int
+    stop_price: int = 0  # non-zero: parked as a stop, not yet live
 
 
 class Trade(msgspec.Struct, frozen=True, gc=False, tag="trade"):
@@ -82,6 +85,15 @@ class OrderReplaced(msgspec.Struct, frozen=True, gc=False, tag="order_replaced")
     kept_priority: bool
 
 
+class OrderTriggered(msgspec.Struct, frozen=True, gc=False, tag="order_triggered"):
+    """A parked stop order hit its stop price and was submitted to the book."""
+
+    seq: int
+    ts: int
+    order_id: int
+    account: int
+
+
 class OrderRejected(msgspec.Struct, frozen=True, gc=False, tag="order_rejected"):
     seq: int
     ts: int
@@ -90,4 +102,4 @@ class OrderRejected(msgspec.Struct, frozen=True, gc=False, tag="order_rejected")
     reason: RejectReason
 
 
-type Event = OrderAccepted | Trade | OrderCancelled | OrderReplaced | OrderRejected
+type Event = OrderAccepted | Trade | OrderCancelled | OrderReplaced | OrderTriggered | OrderRejected

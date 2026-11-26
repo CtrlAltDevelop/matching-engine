@@ -19,17 +19,18 @@ from matching_engine.domain import (
     MAX_INT64,
     NewOrder,
     OrderType,
+    ReplaceOrder,
     SelfTradePrevention,
     Side,
     TimeInForce,
 )
-from matching_engine.events import Event, OrderCancelled, OrderRejected, Trade
+from matching_engine.events import Event, OrderCancelled, OrderRejected, OrderTriggered, Trade
 from matching_engine.market import MarketSpec
 
-_PRICE_FIELDS = frozenset({"price"})
+_PRICE_FIELDS = frozenset({"price", "stop_price"})
 _QTY_FIELDS = frozenset({"qty", "remaining", "maker_remaining", "taker_remaining"})
 
-OrderStatus = Literal["resting", "partially_filled", "filled", "cancelled", "rejected"]
+OrderStatus = Literal["resting", "pending", "partially_filled", "filled", "cancelled", "rejected"]
 
 
 class OrderRequest(BaseModel):
@@ -45,6 +46,9 @@ class OrderRequest(BaseModel):
     )
     post_only: bool = False
     self_trade_prevention: SelfTradePrevention = SelfTradePrevention.CANCEL_TAKER
+    stop_price: Decimal | None = Field(
+        default=None, description="Makes this a stop order, triggered by the last trade price"
+    )
 
     def to_command(self, spec: MarketSpec, order_id: int) -> NewOrder:
         """Convert to engine units. Raises ``ValueError`` for off-grid or missing values."""
@@ -68,7 +72,28 @@ class OrderRequest(BaseModel):
             tif,
             self.post_only,
             self.self_trade_prevention,
+            0 if self.stop_price is None else spec.to_ticks(self.stop_price),
         )
+
+
+class ReplaceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    price: Decimal
+    quantity: Decimal = Field(description="New total remaining quantity")
+
+    def to_command(self, spec: MarketSpec, order_id: int, account: int) -> ReplaceOrder:
+        """Convert to engine units. Raises ``ValueError`` for off-grid values."""
+        return ReplaceOrder(
+            order_id, account, spec.to_ticks(self.price), spec.to_lots(self.quantity)
+        )
+
+
+class ReplaceResponse(BaseModel):
+    order_id: int
+    seq: int
+    status: Literal["replaced", "rejected"]
+    events: list[dict[str, Any]]
 
 
 class OrderResponse(BaseModel):
@@ -119,6 +144,8 @@ def render_event(spec: MarketSpec, event: Event) -> dict[str, Any]:
     """An event as a JSON-ready dict, integers converted back to decimal strings."""
     out: dict[str, Any] = {"type": type(event).__struct_config__.tag}
     for name, value in msgspec.structs.asdict(event).items():
+        if name == "stop_price" and not value:
+            continue  # not a stop order: keep the event shape unchanged
         if name in _PRICE_FIELDS:
             out[name] = spec.price(value) if value else None  # 0 is a market order: no price
         elif name in _QTY_FIELDS:
@@ -139,6 +166,8 @@ def order_outcome(order: NewOrder, events: list[Event]) -> tuple[OrderStatus, in
     """Summarize what happened to a new order: its status and filled lots."""
     filled = 0
     status: OrderStatus | None = None
+    if order.stop_price and not any(isinstance(e, OrderTriggered) for e in events):
+        return ("rejected", 0) if isinstance(events[0], OrderRejected) else ("pending", 0)
     for e in events:
         if isinstance(e, OrderRejected):
             return "rejected", 0

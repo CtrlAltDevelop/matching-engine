@@ -43,6 +43,7 @@ from matching_engine.domain import (
     CancelOrder,
     NewOrder,
     OrderType,
+    ReplaceOrder,
     SelfTradePrevention,
     SequencedCommand,
     Side,
@@ -57,10 +58,16 @@ _FRAME = struct.Struct("<II")
 _NEW = struct.Struct("<BQqQQBBBBqq")
 # kind, seq, ts, order_id, account
 _CANCEL = struct.Struct("<BQqQQ")
-_MAX_PAYLOAD = max(_NEW.size, _CANCEL.size)
+# kind, seq, ts, order_id, account, price, qty
+_REPLACE = struct.Struct("<BQqQQqq")
+# a NewOrder with a stop: the _NEW layout plus stop_price (kind 4 keeps old logs readable)
+_NEW_STOP = struct.Struct("<BQqQQBBBBqqq")
+_MAX_PAYLOAD = max(_NEW.size, _CANCEL.size, _REPLACE.size, _NEW_STOP.size)
 
 _KIND_NEW = 1
 _KIND_CANCEL = 2
+_KIND_REPLACE = 3
+_KIND_NEW_STOP = 4
 _FLAG_POST_ONLY = 0x01
 
 # Enum <-> byte code tables. Codes are positions in these tuples, so new
@@ -96,8 +103,7 @@ def encode(sc: SequencedCommand) -> bytes:
     """Frame one command as a complete record, header included."""
     cmd = sc.command
     if type(cmd) is NewOrder:
-        payload = _NEW.pack(
-            _KIND_NEW,
+        fields = (
             sc.seq,
             sc.ts,
             cmd.order_id,
@@ -109,18 +115,34 @@ def encode(sc: SequencedCommand) -> bytes:
             cmd.price,
             cmd.qty,
         )
-    else:
-        assert type(cmd) is CancelOrder
+        if cmd.stop_price:
+            payload = _NEW_STOP.pack(_KIND_NEW_STOP, *fields, cmd.stop_price)
+        else:
+            payload = _NEW.pack(_KIND_NEW, *fields)
+    elif type(cmd) is CancelOrder:
         payload = _CANCEL.pack(_KIND_CANCEL, sc.seq, sc.ts, cmd.order_id, cmd.account)
+    else:
+        assert type(cmd) is ReplaceOrder
+        payload = _REPLACE.pack(
+            _KIND_REPLACE, sc.seq, sc.ts, cmd.order_id, cmd.account, cmd.price, cmd.qty
+        )
     length = len(payload)
     return _FRAME.pack(length, zlib.crc32(payload, zlib.crc32(_LENGTH.pack(length)))) + payload
 
 
 def decode(payload: bytes) -> SequencedCommand:
     kind = payload[0]
-    if kind == _KIND_NEW and len(payload) == _NEW.size:
-        _, seq, ts, oid, account, side, otype, tif_stp, flags, price, qty = _NEW.unpack(payload)
-        command: NewOrder | CancelOrder = NewOrder(
+    if (kind == _KIND_NEW and len(payload) == _NEW.size) or (
+        kind == _KIND_NEW_STOP and len(payload) == _NEW_STOP.size
+    ):
+        stop_price = 0
+        if kind == _KIND_NEW_STOP:
+            _, seq, ts, oid, account, side, otype, tif_stp, flags, price, qty, stop_price = (
+                _NEW_STOP.unpack(payload)
+            )
+        else:
+            _, seq, ts, oid, account, side, otype, tif_stp, flags, price, qty = _NEW.unpack(payload)
+        command: NewOrder | CancelOrder | ReplaceOrder = NewOrder(
             oid,
             account,
             _SIDES[side],
@@ -130,10 +152,14 @@ def decode(payload: bytes) -> SequencedCommand:
             _TIFS[tif_stp & 0x0F],
             bool(flags & _FLAG_POST_ONLY),
             _STPS[tif_stp >> 4],
+            stop_price,
         )
     elif kind == _KIND_CANCEL and len(payload) == _CANCEL.size:
         _, seq, ts, oid, account = _CANCEL.unpack(payload)
         command = CancelOrder(oid, account)
+    elif kind == _KIND_REPLACE and len(payload) == _REPLACE.size:
+        _, seq, ts, oid, account, price, qty = _REPLACE.unpack(payload)
+        command = ReplaceOrder(oid, account, price, qty)
     else:
         raise WalCorruptionError(f"unknown record kind {kind} with {len(payload)} bytes")
     return SequencedCommand(seq, ts, command)

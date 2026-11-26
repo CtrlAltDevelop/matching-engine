@@ -3,8 +3,12 @@
 # =============================================================================
 # Runs on a version tag. No API token exists anywhere: PyPI trusts this
 # workflow's OIDC identity, configured once under the project's "Publishing"
-# settings (owner CtrlAltDevelop, repo matching-engine, workflow release.yml,
-# environment pypi).
+# settings (owner CtrlAltDevelop, repo matching-engine, workflow
+# release.yml, environment pypi).
+#
+# The publish job lives in this file, not in the shared reusable workflow
+# (CtrlAltDevelop/ci-workflows python-publish.yml): PyPI rejected a publish
+# from the reusable job with `invalid-publisher` in mdp-outbox, the same setup.
 
 name: Release
 
@@ -59,4 +63,5 @@ jobs:
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          skip-existing: true # a re-run or re-tag must not fail on files PyPI already has
+          # Don't fail on a re-run: files PyPI already has are skipped.
+          skip-existing: true

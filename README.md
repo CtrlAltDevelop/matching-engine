@@ -5,7 +5,10 @@
 [![Release](https://img.shields.io/github/v/release/CtrlAltDevelop/matching-engine "Latest GitHub release")](https://github.com/CtrlAltDevelop/matching-engine/releases)
 [![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue "Supported Python versions")](pyproject.toml)
 [![Typed: mypy strict](https://img.shields.io/badge/typed-mypy%20--strict-2a6db2 "Checked with mypy --strict")](pyproject.toml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green "MIT licensed")](LICENSE)
+![FastAPI](https://img.shields.io/badge/fastapi-%E2%89%A50.115-009688)
+![Docker](https://img.shields.io/badge/docker-compose-2496ED)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg "AGPL-3.0 licensed")](LICENSE)
+[![last commit](https://img.shields.io/github/last-commit/CtrlAltDevelop/matching-engine)](https://github.com/CtrlAltDevelop/matching-engine/commits/main)
 
 A price-time priority order book that matches deterministically, survives a
 crash with every acknowledged order intact, and publishes measured numbers
@@ -29,7 +32,7 @@ a Rust/PyO3 core can replace it later ([ADR 4](docs/adr/0004-python-first-with-a
 
 ```mermaid
 flowchart LR
-    C[Clients] -- "REST: place / cancel" --> G[Gateway<br/>FastAPI]
+    C[Clients] -- "REST: place / amend / cancel" --> G[Gateway<br/>FastAPI]
     C <-- "WebSocket: trades, L2" --- MD
     G -- "per-market queue<br/>(bounded, 503 when full)" --> W
 
@@ -109,10 +112,13 @@ is what makes it O(1).
 | GTC / IOC / FOK | Rest / cancel the unfilled part / fill completely or reject with no trades |
 | Post-only | Rejected if it would take liquidity; must be GTC |
 | Self-trade prevention | `cancel_taker` (default), `cancel_maker`, `cancel_both`, or `none` |
+| Stop / stop-limit | `stop_price` parks the order off-book until the last trade price reaches it (buy: at or above, sell: at or below); cancellable while parked ([ADR 5](docs/adr/0005-stop-orders-and-amend.md)) |
+| Amend | `PATCH` a resting order's price and remaining size; shrinking at the same price keeps queue position, anything else re-queues |
 | Cancel | Owner only; cancelling a filled or unknown order is rejected |
 
 Every command produces an ordered list of events — `order_accepted`, `trade`,
 `order_cancelled` (reason `user`, `unfilled` or `self_trade`),
+`order_replaced`, `order_triggered`,
 `order_rejected` (with a reason) — each carrying the command's `seq` and `ts`.
 
 ## Quickstart
@@ -281,7 +287,12 @@ uv tool run py-spy record -o flame.svg -- python bench/bench_engine.py --orders 
 2. [WAL format, group commit and what a crash can lose](docs/adr/0002-wal-format-and-fsync-policy.md)
 3. [Integer ticks and lots instead of floats or Decimal](docs/adr/0003-integer-ticks-and-lots.md)
 4. [Python first, with a clean path to a Rust core](docs/adr/0004-python-first-with-a-rust-path.md)
+5. [Stop orders trigger on last trade price; amend keeps priority only when shrinking](docs/adr/0005-stop-orders-and-amend.md)
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-[MIT](LICENSE) © 2026 Mohammad Zarif
+[AGPL-3.0-only](LICENSE) © 2026 Mohammad Zarif

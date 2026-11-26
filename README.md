@@ -32,7 +32,7 @@ a Rust/PyO3 core can replace it later ([ADR 4](docs/adr/0004-python-first-with-a
 
 ```mermaid
 flowchart LR
-    C[Clients] -- "REST: place / cancel" --> G[Gateway<br/>FastAPI]
+    C[Clients] -- "REST: place / amend / cancel" --> G[Gateway<br/>FastAPI]
     C <-- "WebSocket: trades, L2" --- MD
     G -- "per-market queue<br/>(bounded, 503 when full)" --> W
 
@@ -112,10 +112,13 @@ is what makes it O(1).
 | GTC / IOC / FOK | Rest / cancel the unfilled part / fill completely or reject with no trades |
 | Post-only | Rejected if it would take liquidity; must be GTC |
 | Self-trade prevention | `cancel_taker` (default), `cancel_maker`, `cancel_both`, or `none` |
+| Stop / stop-limit | `stop_price` parks the order off-book until the last trade price reaches it (buy: at or above, sell: at or below); cancellable while parked ([ADR 5](docs/adr/0005-stop-orders-and-amend.md)) |
+| Amend | `PATCH` a resting order's price and remaining size; shrinking at the same price keeps queue position, anything else re-queues |
 | Cancel | Owner only; cancelling a filled or unknown order is rejected |
 
 Every command produces an ordered list of events — `order_accepted`, `trade`,
 `order_cancelled` (reason `user`, `unfilled` or `self_trade`),
+`order_replaced`, `order_triggered`,
 `order_rejected` (with a reason) — each carrying the command's `seq` and `ts`.
 
 ## Quickstart
@@ -284,6 +287,7 @@ uv tool run py-spy record -o flame.svg -- python bench/bench_engine.py --orders 
 2. [WAL format, group commit and what a crash can lose](docs/adr/0002-wal-format-and-fsync-policy.md)
 3. [Integer ticks and lots instead of floats or Decimal](docs/adr/0003-integer-ticks-and-lots.md)
 4. [Python first, with a clean path to a Rust core](docs/adr/0004-python-first-with-a-rust-path.md)
+5. [Stop orders trigger on last trade price; amend keeps priority only when shrinking](docs/adr/0005-stop-orders-and-amend.md)
 
 ## Contributing and security
 

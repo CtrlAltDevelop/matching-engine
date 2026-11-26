@@ -8,6 +8,30 @@ cannot read the previous release's files is a major version.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-11-26
+
+### Added
+
+- Amend: `PATCH /markets/{symbol}/orders/{order_id}?account=` with a new price
+  and total remaining quantity. Lowering size at the same price keeps queue
+  position; any other change re-queues at the back and matches if it crosses.
+  New `ReplaceOrder` command and `order_replaced` event.
+- Stop and stop-limit orders: set `stop_price` on a new order. It is parked
+  off the book until the last trade price reaches it (buy: at or above, sell:
+  at or below), then submitted in arrival order, cascading within the same
+  command. New `order_triggered` event and `pending` order status; parked
+  stops can be cancelled. See ADR 5.
+- ADR 5, recording the stop trigger and amend decisions.
+
+### Changed
+
+- WAL: replace is record kind 3 and a stop order is kind 4. Existing logs
+  replay unchanged. Snapshots gain `last_trade_price` and `stops`, both
+  defaulted, so existing snapshots load. The engine state hash now covers
+  them, so hashes differ from 0.1.x.
+- Dependencies: the python-minor group (14 updates); Docker base image
+  python 3.15-slim.
+
 ## [0.1.1] — 2026-10-15
 
 ### Fixed
@@ -51,6 +75,7 @@ cannot read the previous release's files is a major version.
 - Golden, property-based, replay, crash (killed subprocess) and gateway tests;
   engine, recovery and end-to-end benchmarks.
 
-[Unreleased]: https://github.com/CtrlAltDevelop/matching-engine/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/CtrlAltDevelop/matching-engine/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/CtrlAltDevelop/matching-engine/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/CtrlAltDevelop/matching-engine/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/CtrlAltDevelop/matching-engine/releases/tag/v0.1.0

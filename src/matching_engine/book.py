@@ -192,6 +192,12 @@ class OrderBook:
         del self.orders[order.order_id]
         self.side(order.side).remove(order)
 
+    def reduce(self, order: RestingOrder, remaining: int) -> None:
+        """Shrink a resting order in place, keeping its queue position."""
+        level = self.side(order.side).levels[order.price * self.side(order.side).sign]
+        level.qty -= order.remaining - remaining
+        order.remaining = remaining
+
     def best_bid(self) -> int | None:
         level = self.bids.best()
         return None if level is None else level.price

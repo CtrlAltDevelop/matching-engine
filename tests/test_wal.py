@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from helpers import cancel, limit, market
+from helpers import cancel, limit, market, replace
 
 from matching_engine.domain import SelfTradePrevention, SequencedCommand, Side, TimeInForce
 from matching_engine.wal import (
@@ -34,6 +34,7 @@ COMMANDS = [
     ),
     SequencedCommand(3, 30, market(3, Side.SELL, 9, tif=TimeInForce.FOK)),
     SequencedCommand(4, 40, cancel(1, account=7)),
+    SequencedCommand(5, 50, replace(1, 99, 4, account=7)),
 ]
 
 

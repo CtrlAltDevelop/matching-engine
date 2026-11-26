@@ -19,6 +19,7 @@ from matching_engine.domain import (
     MAX_INT64,
     NewOrder,
     OrderType,
+    ReplaceOrder,
     SelfTradePrevention,
     Side,
     TimeInForce,
@@ -69,6 +70,26 @@ class OrderRequest(BaseModel):
             self.post_only,
             self.self_trade_prevention,
         )
+
+
+class ReplaceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    price: Decimal
+    quantity: Decimal = Field(description="New total remaining quantity")
+
+    def to_command(self, spec: MarketSpec, order_id: int, account: int) -> ReplaceOrder:
+        """Convert to engine units. Raises ``ValueError`` for off-grid values."""
+        return ReplaceOrder(
+            order_id, account, spec.to_ticks(self.price), spec.to_lots(self.quantity)
+        )
+
+
+class ReplaceResponse(BaseModel):
+    order_id: int
+    seq: int
+    status: Literal["replaced", "rejected"]
+    events: list[dict[str, Any]]
 
 
 class OrderResponse(BaseModel):

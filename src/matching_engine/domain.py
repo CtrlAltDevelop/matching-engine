@@ -65,7 +65,23 @@ class CancelOrder(msgspec.Struct, frozen=True, gc=False, tag="cancel"):
     account: int
 
 
-type Command = NewOrder | CancelOrder
+class ReplaceOrder(msgspec.Struct, frozen=True, gc=False, tag="replace"):
+    """Amend a resting order to a new ``price`` and total remaining ``qty``.
+
+    Lowering ``qty`` at the same price keeps queue position. Any other change
+    re-queues the order at the back of its level (or matches it, if the new
+    price crosses). The amended order is a plain GTC limit order: post-only
+    and self-trade policy are not stored on the book, so it takes the default
+    ``CANCEL_TAKER`` policy.
+    """
+
+    order_id: int
+    account: int
+    price: int
+    qty: int
+
+
+type Command = NewOrder | CancelOrder | ReplaceOrder
 
 
 class SequencedCommand(msgspec.Struct, frozen=True, gc=False):

@@ -70,6 +70,18 @@ class OrderCancelled(msgspec.Struct, frozen=True, gc=False, tag="order_cancelled
     reason: CancelReason
 
 
+class OrderReplaced(msgspec.Struct, frozen=True, gc=False, tag="order_replaced"):
+    """A resting order was amended. ``kept_priority`` says whether it kept its queue slot."""
+
+    seq: int
+    ts: int
+    order_id: int
+    account: int
+    price: int
+    qty: int
+    kept_priority: bool
+
+
 class OrderRejected(msgspec.Struct, frozen=True, gc=False, tag="order_rejected"):
     seq: int
     ts: int
@@ -78,4 +90,4 @@ class OrderRejected(msgspec.Struct, frozen=True, gc=False, tag="order_rejected")
     reason: RejectReason
 
 
-type Event = OrderAccepted | Trade | OrderCancelled | OrderRejected
+type Event = OrderAccepted | Trade | OrderCancelled | OrderReplaced | OrderRejected

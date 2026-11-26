@@ -125,6 +125,28 @@ def test_cancel_is_owner_only(client: TestClient) -> None:
     assert right["events"][0]["remaining"] == "1.000"
 
 
+def test_replace_amends_a_resting_order(client: TestClient) -> None:
+    order(client, account=5, side="sell", price="100", quantity="2")
+
+    ok = client.patch(
+        "/markets/BTC-USDT/orders/1", params={"account": 5}, json={"price": "101", "quantity": "1"}
+    ).json()
+    wrong = client.patch(
+        "/markets/BTC-USDT/orders/1", params={"account": 6}, json={"price": "101", "quantity": "1"}
+    ).json()
+    off_grid = client.patch(
+        "/markets/BTC-USDT/orders/1",
+        params={"account": 5},
+        json={"price": "101.001", "quantity": "1"},
+    )
+
+    assert ok["status"] == "replaced"
+    assert ok["events"][0]["price"] == "101.00"
+    assert wrong["events"][0]["reason"] == "not_order_owner"
+    assert off_grid.status_code == 422
+    assert client.get("/markets").json()[0]["best_ask"] == "101.00"
+
+
 def test_depth_and_l3_views(client: TestClient) -> None:
     order(client, account=2, side="buy", price="99.50", quantity="1")
     order(client, account=3, side="buy", price="99.50", quantity="2")

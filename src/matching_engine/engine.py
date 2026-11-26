@@ -19,6 +19,7 @@ from matching_engine.domain import (
     CancelOrder,
     NewOrder,
     OrderType,
+    ReplaceOrder,
     SelfTradePrevention,
     SequencedCommand,
     Side,
@@ -30,6 +31,7 @@ from matching_engine.events import (
     OrderAccepted,
     OrderCancelled,
     OrderRejected,
+    OrderReplaced,
     RejectReason,
     Trade,
 )
@@ -104,8 +106,10 @@ class MatchingEngine:
         cmd = sc.command
         if type(cmd) is NewOrder:
             return self._new_order(cmd, seq, sc.ts)
-        assert type(cmd) is CancelOrder
-        return self._cancel(cmd, seq, sc.ts)
+        if type(cmd) is CancelOrder:
+            return self._cancel(cmd, seq, sc.ts)
+        assert type(cmd) is ReplaceOrder
+        return self._replace(cmd, seq, sc.ts)
 
     def _new_order(self, o: NewOrder, seq: int, ts: int) -> list[Event]:
         reason = self._validate(o)
@@ -269,3 +273,32 @@ class MatchingEngine:
                 seq, ts, order.order_id, order.account, order.remaining, CancelReason.USER
             )
         ]
+
+    def _replace(self, r: ReplaceOrder, seq: int, ts: int) -> list[Event]:
+        order = self.book.orders.get(r.order_id)
+        reason = None
+        if order is None:
+            reason = RejectReason.UNKNOWN_ORDER
+        elif order.account != r.account:
+            reason = RejectReason.NOT_ORDER_OWNER
+        elif not 0 < r.qty <= MAX_INT64:
+            reason = RejectReason.INVALID_QUANTITY
+        elif not 0 < r.price <= MAX_INT64:
+            reason = RejectReason.INVALID_PRICE
+        if reason is not None or order is None:
+            return [
+                OrderRejected(seq, ts, r.order_id, r.account, reason or RejectReason.UNKNOWN_ORDER)
+            ]
+
+        if r.price == order.price and r.qty <= order.remaining:
+            self.book.reduce(order, r.qty)
+            return [OrderReplaced(seq, ts, r.order_id, r.account, r.price, r.qty, True)]
+
+        self.book.remove(order)
+        events: list[Event] = [OrderReplaced(seq, ts, r.order_id, r.account, r.price, r.qty, False)]
+        o = NewOrder(r.order_id, r.account, order.side, r.price, r.qty)
+        opposite = self.book.opposite(o.side)
+        remaining = self._match(o, opposite, opposite.key(o.price), events, seq, ts)
+        if remaining:
+            self.book.add(RestingOrder(o.order_id, o.account, o.side, o.price, remaining))
+        return events

@@ -13,7 +13,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, Path, Query, Request, Web
 
 from matching_engine import __version__
 from matching_engine.domain import MAX_INT64, CancelOrder, Side
-from matching_engine.events import OrderCancelled
+from matching_engine.events import OrderCancelled, OrderReplaced
 from matching_engine.gateway.config import Settings
 from matching_engine.gateway.marketdata import MarketDataHub, Subscriber
 from matching_engine.gateway.schemas import (
@@ -24,6 +24,8 @@ from matching_engine.gateway.schemas import (
     MarketInfo,
     OrderRequest,
     OrderResponse,
+    ReplaceRequest,
+    ReplaceResponse,
     order_outcome,
     render_depth,
     render_event,
@@ -159,6 +161,32 @@ async def cancel_order(
         order_id=order_id,
         seq=sc.seq,
         status="cancelled" if cancelled else "rejected",
+        events=[render_event(worker.spec, e) for e in events],
+    )
+
+
+@router.patch("/markets/{symbol}/orders/{order_id}")
+async def replace_order(
+    request: Request,
+    symbol: Symbol,
+    order_id: Annotated[int, Path(ge=1, le=MAX_INT64)],
+    account: Annotated[int, Query(ge=1, le=MAX_INT64)],
+    body: ReplaceRequest,
+) -> ReplaceResponse:
+    worker = _market(request, symbol)
+    try:
+        command = body.to_command(worker.spec, order_id, account)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    try:
+        sc, events = await worker.submit(lambda _seq: command)
+    except MarketUnavailableError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+    replaced = any(isinstance(e, OrderReplaced) for e in events)
+    return ReplaceResponse(
+        order_id=order_id,
+        seq=sc.seq,
+        status="replaced" if replaced else "rejected",
         events=[render_event(worker.spec, e) for e in events],
     )
 

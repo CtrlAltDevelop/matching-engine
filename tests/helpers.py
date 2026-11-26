@@ -9,6 +9,7 @@ from matching_engine.domain import (
     Command,
     NewOrder,
     OrderType,
+    ReplaceOrder,
     SelfTradePrevention,
     Side,
     TimeInForce,
@@ -46,3 +47,7 @@ def market(
 
 def cancel(order_id: int, account: int = 1) -> CancelOrder:
     return CancelOrder(order_id, account)
+
+
+def replace(order_id: int, price: int, qty: int, account: int = 1) -> ReplaceOrder:
+    return ReplaceOrder(order_id, account, price, qty)
